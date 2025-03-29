@@ -21,7 +21,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # FrontendURL
+    allow_origins=[
+    "http://localhost:3000",  # Local development
+    "https://skillpilot-wysm.onrender.com",  # Deployed frontend
+],
+  # FrontendURL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
