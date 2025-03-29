@@ -67,12 +67,9 @@ except Exception as e:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Loadingg model
-model_path = os.path.join(BASE_DIR, "..", "ML", "svm_model.pkl")
-vectorizer_path = os.path.join(BASE_DIR, "..", "ML", "vectorizer.pkl")
+model_path = os.path.join(BASE_DIR, "ML", "svm_model.pkl")
+vectorizer_path = os.path.join(BASE_DIR, "ML", "vectorizer.pkl")
 
-print(f"Loading ML models from:")
-print(f"Model path: {model_path}")
-print(f"Vectorizer path: {vectorizer_path}")
 
 try:
     model = joblib.load(model_path)
