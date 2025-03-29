@@ -13,19 +13,16 @@ import sys
 import warnings
 from resume_generator import ResumeData, generate_resume, analyze_resume
 
+
 warnings.filterwarnings('ignore', category=UserWarning)
 
 load_dotenv()
-
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "http://localhost:3000",  # Local development
-    "https://skillpilot-wysm.onrender.com",  # Deployed frontend
-],
-  # FrontendURL
+    allow_origins=[FRONTEND_URL], # FrontendURL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
