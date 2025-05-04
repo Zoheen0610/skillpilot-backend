@@ -5,18 +5,24 @@ import joblib
 import os
 from dotenv import load_dotenv
 import pymongo
-from typing import Dict, Any, List
 from io import BytesIO
 from pdfminer.high_level import extract_text
-import re
-import sys
 import warnings
 from resume_generator import ResumeData, generate_resume, analyze_resume
-
+import uuid
+import uvicorn
+import google.generativeai as genai
 
 warnings.filterwarnings('ignore', category=UserWarning)
 
 load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY not found in environment variables")
+
+genai.configure(api_key=GEMINI_API_KEY)
+g_model = genai.GenerativeModel("gemini-1.5-flash")
+
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app = FastAPI()
 
@@ -194,6 +200,53 @@ async def create_resume(data: ResumeData):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+conversation_history = {}
+
+class ChatInput(BaseModel):
+    query: str
+    session_id: str
+
+@app.post("/chat")
+async def chat_with_gemini(input: ChatInput):
+    try:
+        # If session_id doesn't exist, generate a new one
+        session_id = input.session_id if input.session_id else str(uuid.uuid4())
+
+        # If the session ID doesn't have a conversation history, create one
+        if session_id not in conversation_history:
+            conversation_history[session_id] = []
+
+        # Add the current user's query to the conversation history
+        conversation_history[session_id].append(f"User: {input.query}")
+
+        # Construct the prompt with the entire conversation history
+        prompt = f"""
+You are a friendly career counselor chatbot.
+
+- If the user greets (like "hi", "hello"), respond with a friendly greeting.
+- If the user asks something vague (like "I need help"), politely ask for more details.
+- If the user asks a specific career-related question, give a concise and helpful answer.
+- Do not write in bold or markdown formatting.
+
+Conversation History:
+{''.join(conversation_history[session_id])}
+
+User input: {input.query}
+Response:
+"""
+
+        # Generate a response using the model
+        response = g_model.generate_content(prompt)
+
+        # Append the bot's response to the conversation history
+        conversation_history[session_id].append(f"Bot: {response.text.strip()}")
+
+        # Return the response along with the session ID
+        return {"response": response.text.strip(), "session_id": session_id}
+
+    except Exception as e:
+        return {"response": "Sorry, something went wrong. Please try again later."}
 
 if __name__ == "__main__":
     import uvicorn
